@@ -95,14 +95,21 @@ class Rule:
 		self.var = var
 		self.expr = expr
 
+class TurtleState:
+	def __init__(self, angle, pos, dist):
+		self.angle = angle
+		self.pos = pos
+		self.dist = dist
+	def copy(self):
+		return TurtleState(self.angle, self.pos, self.dist)
+
 class LSystem:
 
 	def __init__(self, initiator, angle_change, *rules):
 		self.state = initiator
 		self.angle_change = angle_change
-		self.angle = 0.0
-		self.forward_dist = 0.025
-		self.pos = float2(0.5, 0.5)
+		self.turtle_state = TurtleState(0.0, float2(0.5, 0.5), 0.05)
+		self.turtle_states = []
 		self.rules = [self.__parse_rule(rule) for rule in rules]
 
 	def __parse_rule(self, rule):
@@ -129,24 +136,24 @@ class LSystem:
 
 	def __render_command(self, util, c, line_input, current_image, graph_pos):
 		if c == "F":
-			new_pos = float2(self.pos.x + self.forward_dist*math.cos(math.pi/180 * self.angle), self.pos.y + self.forward_dist*math.sin(math.pi/180 * self.angle))
-			line = util.draw_line(graph_pos, line_input, self.pos, new_pos, 0.01)
-			self.pos = new_pos
+			new_pos = float2(self.turtle_state.pos.x + self.turtle_state.dist*math.cos(math.pi/180 * self.turtle_state.angle), self.turtle_state.pos.y + self.turtle_state.dist*math.sin(math.pi/180 * self.turtle_state.angle))
+			line = util.draw_line(graph_pos, line_input, self.turtle_state.pos, new_pos, 0.01)
+			self.turtle_state.pos = new_pos
 			return util.union(line, current_image)
 		elif c == "f":
-			self.pos = float2(self.pos.x + self.forward_dist*math.cos(math.pi/180 * self.angle), self.pos.y + self.forward_dist*math.sin(math.pi/180 * self.angle))
+			self.turtle_state.pos = float2(self.turtle_state.pos.x + self.turtle_state.dist*math.cos(math.pi/180 * self.turtle_state.angle), self.turtle_state.pos.y + self.turtle_state.dist*math.sin(math.pi/180 * self.turtle_state.angle))
 		elif c == "+":
-			self.angle -= self.angle_change
+			self.turtle_state.angle -= self.angle_change
 		elif c == "-":
-			self.angle += self.angle_change
+			self.turtle_state.angle += self.angle_change
 		elif c == "[":
-			# TODO push state
-			raise ValueError("Not implemented PUSH")
+			self.turtle_states.append(self.turtle_state.copy())
 			pass
 		elif c == "]":
-			# TODO pop state
-			raise ValueError("Not implemented POP")
-			pass
+			if len(self.turtle_states) >= 1:
+				self.turtle_state = self.turtle_states.pop()
+			else:
+				raise ValueError("No states left to POP")
 		else:
 			raise ValueError("Invalid character: " + c)
 			
@@ -166,8 +173,8 @@ class LSystem:
 
 
 def main():
-	lsystem = LSystem("F-F-F-F", 90.0, "F=F-F+F+FF-F-F+F")
-	lsystem.iterate_generations(2)
+	lsystem = LSystem("F", 25.0, "F=F[-F][+F]")
+	lsystem.iterate_generations(4)
 	lsystem.render(float2(0, 0))
 
 main()
