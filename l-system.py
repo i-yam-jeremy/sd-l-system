@@ -63,11 +63,11 @@ def draw_line(graph, graph_pos: float2, p1: float2, p2: float2, thickness):
 def union(graph, node1, node2):
 	blend = graph.newNode(BLEND)
 
-	input1 = blend.getProperties(SDPropertyCategory.Input)[13]
+	input1 = blend.getProperties(SDPropertyCategory.Input)[12]
 	output1 = node1.getProperties(SDPropertyCategory.Output)[0]
 	node1.newPropertyConnection(output1, blend, input1)
 	
-	input2 = blend.getProperties(SDPropertyCategory.Input)[14]
+	input2 = blend.getProperties(SDPropertyCategory.Input)[13]
 	output2 = node2.getProperties(SDPropertyCategory.Output)[0]
 	node2.newPropertyConnection(output2, blend, input2)
 	
@@ -79,13 +79,14 @@ def union(graph, node1, node2):
 	return blend
 
 def get_circ_point(i, total):
-	return float2(math.cos((2*math.pi/total)*i), math.sin((2*math.pi/total)*i))
+	return float2(math.cos((2*math.pi/total)*i)/2 + 0.5, math.sin((2*math.pi/total)*i)/2 + 0.5)
 
 def main():
 	graph = get_graph()
 	total = 10
 	line = draw_line(graph, float2(0, 0), get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
 	for i in range(0, total):
+		print(get_circ_point(i, total), get_circ_point(i+1, total))
 		line = union(graph, line, draw_line(graph, float2(0, (i+1)*150), get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
 	
 main()
