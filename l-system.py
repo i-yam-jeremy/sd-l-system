@@ -30,7 +30,7 @@ def create_white_grayscale(graph):
 	blank.newPropertyConnection(blankOutput, gc, gcInput)
 	return gc
 
-def transform(graph, node, matrix):
+def transform(graph, node, matrix, offset):
 	transform = graph.newNode(TRANSFORM)
 	transform.setPosition(float2(node.getPosition().x + 150, node.getPosition().y + 0))
 	
@@ -50,8 +50,9 @@ def transform(graph, node, matrix):
 def draw_line(graph, p1, p2, thickness):
 	white = create_white_grayscale(graph)
 	dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
-	print(dist)
-	line = transform(graph, white, SDValueFloat4.sNew(float4((p2.x - p1.x)/dist, (p2.y - p1.y)/thickness, -(p2.y - p1.y)/dist, (p2.x - p1.x)/thickness)))
+	matrix = SDValueFloat4.sNew(float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist)))
+	offset = float2(0,0)
+	line = transform(graph, white, matrix, offset)
 	return line
 
 def union(graph, node1, node2):
