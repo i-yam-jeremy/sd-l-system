@@ -5,6 +5,7 @@ from sd.api.sdbasetypes import float2, float4, ColorRGBA
 from sd.api.sdproperty import SDPropertyCategory, SDPropertyInheritanceMethod
 from sd.api.sdvaluecolorrgba import SDValueColorRGBA
 from sd.api.sdvalueenum import SDValueEnum
+from sd.api.sdvaluefloat2 import SDValueFloat2
 from sd.api.sdvaluefloat4 import SDValueFloat4
 
 GRAYSCALE_CONVERT = "sbs::compositing::grayscaleconversion"
@@ -30,7 +31,7 @@ def create_white_grayscale(graph):
 	blank.newPropertyConnection(blankOutput, gc, gcInput)
 	return gc
 
-def transform(graph, node, matrix, offset):
+def transform(graph, node, matrix: float4, offset: float2):
 	transform = graph.newNode(TRANSFORM)
 	transform.setPosition(float2(node.getPosition().x + 150, node.getPosition().y + 0))
 	
@@ -43,16 +44,19 @@ def transform(graph, node, matrix, offset):
 	transform.setPropertyValue(tiling, SDValueEnum.sFromValue("sbs::compositing::tiling", 0))
 	
 	matrix_prop = transform.getProperties(SDPropertyCategory.Input)[6]
-	transform.setPropertyValue(matrix_prop, matrix)
+	transform.setPropertyValue(matrix_prop, SDValueFloat4.sNew(matrix))
+	
+	offset_prop = transform.getProperties(SDPropertyCategory.Input)[7]
+	transform.setPropertyValue(offset_prop, SDValueFloat2.sNew(offset))
 
 	return transform
 
 def draw_line(graph, p1, p2, thickness):
 	white = create_white_grayscale(graph)
 	dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
-	matrix = SDValueFloat4.sNew(float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist)))
-	offset = float2(0,0)
-	line = transform(graph, white, matrix, offset)
+	matrix = float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist))
+	line_no_offset = transform(graph, white, matrix, float2(0, 0))
+	line = transform(graph, line_no_offset, float4(1, 0, 0, 1), float2(-((p1.x + p2.x)/2 - 0.5), (p1.y + p2.y)/2 - 0.5))
 	return line
 
 def union(graph, node1, node2):
@@ -75,6 +79,6 @@ def union(graph, node1, node2):
 
 def main():
 	graph = get_graph()
-	line = draw_line(graph, float2(0, 0), float2(1, 0.5), 0.05)
+	line = draw_line(graph, float2(0.25, 0.25), float2(1, 0.5), 0.05)
 	
 main()
