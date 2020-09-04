@@ -97,28 +97,30 @@ class Rule:
 
 class LSystem:
 
-	def __init__(self, initiator, angle, *rules):
+	def __init__(self, initiator, angle_change, *rules):
 		self.state = initiator
-		self.angle = angle
-		self.current_angle = 0.0
+		self.angle_change = angle_change
+		self.angle = 0.0
 		self.forward_dist = 0.1
-		self.current_pos = float2(0.5, 0.5)
+		self.pos = float2(0.5, 0.5)
 		self.rules = [self.__parse_rule(rule) for rule in rules]
 
 	def __parse_rule(self, rule):
 		# NOTE: rule must be of the form (var + "=" + expr) where var is a single char string
 		return Rule(rule[0], rule[2:])
 
-	def __render_command(self, util, command, line_input, current_image, graph_pos):
+	def __render_command(self, util, c, line_input, current_image, graph_pos):
 		if c == "F":
-			line = util.draw_line(graph_pos, line_input, float2(0, 0), float2(1, 1), 0.01)
+			new_pos = float2(self.pos.x + self.forward_dist*math.cos(math.pi/180 * self.angle), self.pos.y + self.forward_dist*math.sin(math.pi/180 * self.angle))
+			line = util.draw_line(graph_pos, line_input, self.pos, new_pos, 0.01)
+			self.pos = new_pos
 			return util.union(line, current_image)
 		elif c == "f":
-			pass
+			self.pos = float2(self.pos.x + self.forward_dist*math.cos(math.pi/180 * self.angle), self.pos.y + self.forward_dist*math.sin(math.pi/180 * self.angle))
 		elif c == "+":
-			self.current_angle -= self.angle_change
+			self.angle -= self.angle_change
 		elif c == "-":
-			self.current_angle += self.angle_change
+			self.angle += self.angle_change
 		elif c == "[":
 			# TODO push state
 			pass
@@ -137,7 +139,7 @@ class LSystem:
 			current_image = bg
 			for i in range(0, len(self.state)):
 				c = self.state[i]
-				new_image = self.__render_command(util, c, line_input, current_image, float2(450, i*150)
+				new_image = self.__render_command(util, c, line_input, current_image, float2(450, i*150))
 				if new_image is not None:
 					current_image = new_image
 			return current_image
