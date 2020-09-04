@@ -101,13 +101,31 @@ class LSystem:
 		self.state = initiator
 		self.angle_change = angle_change
 		self.angle = 0.0
-		self.forward_dist = 0.1
+		self.forward_dist = 0.025
 		self.pos = float2(0.5, 0.5)
 		self.rules = [self.__parse_rule(rule) for rule in rules]
 
 	def __parse_rule(self, rule):
 		# NOTE: rule must be of the form (var + "=" + expr) where var is a single char string
 		return Rule(rule[0], rule[2:])
+	
+	def iterate_generations(self, gen_count):
+		for i in range(0, gen_count):
+			self.state = self.__iterate_generation(self.state)
+			
+	def __iterate_generation(self, state):
+		new_state = ""
+		for c in state:
+			matched_rule = False
+			for rule in self.rules:
+				if rule.var == c:
+					new_state += rule.expr
+					matched_rule = True
+					break
+			if not matched_rule:
+				new_state += c
+		return new_state
+			
 
 	def __render_command(self, util, c, line_input, current_image, graph_pos):
 		if c == "F":
@@ -123,9 +141,11 @@ class LSystem:
 			self.angle += self.angle_change
 		elif c == "[":
 			# TODO push state
+			raise ValueError("Not implemented PUSH")
 			pass
 		elif c == "]":
 			# TODO pop state
+			raise ValueError("Not implemented POP")
 			pass
 		else:
 			raise ValueError("Invalid character: " + c)
@@ -139,7 +159,7 @@ class LSystem:
 			current_image = bg
 			for i in range(0, len(self.state)):
 				c = self.state[i]
-				new_image = self.__render_command(util, c, line_input, current_image, float2(450, i*150))
+				new_image = self.__render_command(util, c, line_input, current_image, float2(450, i*100))
 				if new_image is not None:
 					current_image = new_image
 			return current_image
@@ -147,6 +167,7 @@ class LSystem:
 
 def main():
 	lsystem = LSystem("F-F-F-F", 90.0, "F=F-F+F+FF-F-F+F")
+	lsystem.iterate_generations(2)
 	lsystem.render(float2(0, 0))
 
 main()
