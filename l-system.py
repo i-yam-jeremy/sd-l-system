@@ -19,8 +19,12 @@ class SDUtil:
 	def __init__(self):
 		ctx = sd.getContext()
 		app = ctx.getSDApplication()
-		uiMgr = app.getQtForPythonUIMgr()
-		self.graph = uiMgr.getCurrentGraph()
+		self.ui_mgr = app.getQtForPythonUIMgr()
+		self.graph = self.ui_mgr.getCurrentGraph()
+		
+	def get_selected_lsystem_nodes(self):
+		selection = self.ui_mgr.getCurrentGraphSelection()
+		return [node for node in selection if node.getDefinition().getLabel() == "L-System"]
 
 	def create_grayscale(self, value, pos: float2):
 		blank = self.graph.newNode(UNIFORM_COLOR)
@@ -173,8 +177,9 @@ class LSystem:
 
 
 def main():
-	lsystem = LSystem("F", 25.0, "F=F[-F][+F]")
-	lsystem.iterate_generations(4)
-	lsystem.render(float2(0, 0))
+	print(SDUtil().get_selected_lsystem_nodes())
+	#lsystem = LSystem("F", 25.0, "F=F[-F][+F]")
+	#lsystem.iterate_generations(4)
+	#lsystem.render(float2(0, 0))
 
 main()
