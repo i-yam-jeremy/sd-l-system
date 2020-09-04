@@ -52,16 +52,18 @@ def draw_line(graph, p1, p2, thickness):
 def union(graph, node1, node2):
 	blend = graph.newNode(BLEND)
 
-	input1 = blend.getProperties(SDPropertyCategory.Input)[6]
+	input1 = blend.getProperties(SDPropertyCategory.Input)[13]
 	output1 = node1.getProperties(SDPropertyCategory.Output)[0]
 	node1.newPropertyConnection(output1, blend, input1)
 	
-	input2 = blend.getProperties(SDPropertyCategory.Input)[7]
+	input2 = blend.getProperties(SDPropertyCategory.Input)[14]
 	output2 = node2.getProperties(SDPropertyCategory.Output)[0]
 	node2.newPropertyConnection(output2, blend, input2)
 	
-	blending_mode = blend.getProperties(SDPropertyCategory.Input)[10]
+	blending_mode = blend.getProperties(SDPropertyCategory.Input)[8]
 	blend.setPropertyValue(blending_mode, SDValueEnum.sFromValue("sbs::compositing::blendingmode", 5))
+	
+	blend.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
 	
 	return blend
 
