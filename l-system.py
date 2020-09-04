@@ -20,8 +20,9 @@ def get_graph():
 	graph = uiMgr.getCurrentGraph()
 	return graph
 
-def create_white_grayscale(graph):
+def create_white_grayscale(graph, pos: float2):
 	blank = graph.newNode(UNIFORM_COLOR)
+	blank.setPosition(pos)
 	gc = graph.newNode(GRAYSCALE_CONVERT)
 	gc.setPosition(float2(blank.getPosition().x + 150, blank.getPosition().y + 0))
 	blankOutput = blank.getProperties(SDPropertyCategory.Output)[0]
@@ -51,8 +52,8 @@ def transform(graph, node, matrix: float4, offset: float2):
 
 	return transform
 
-def draw_line(graph, p1, p2, thickness):
-	white = create_white_grayscale(graph)
+def draw_line(graph, graph_pos: float2, p1: float2, p2: float2, thickness):
+	white = create_white_grayscale(graph, graph_pos)
 	dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
 	matrix = float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist))
 	line_no_offset = transform(graph, white, matrix, float2(0, 0))
@@ -77,8 +78,14 @@ def union(graph, node1, node2):
 	
 	return blend
 
+def get_circ_point(i, total):
+	return float2(math.cos((2*math.pi/total)*i), math.sin((2*math.pi/total)*i))
+
 def main():
 	graph = get_graph()
-	line = draw_line(graph, float2(0.25, 0.25), float2(1, 0.5), 0.05)
+	total = 10
+	line = draw_line(graph, float2(0, 0), get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
+	for i in range(0, total):
+		line = union(graph, line, draw_line(graph, float2(0, (i+1)*150), get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
 	
 main()
