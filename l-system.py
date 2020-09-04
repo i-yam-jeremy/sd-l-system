@@ -12,6 +12,7 @@ GRAYSCALE_CONVERT = "sbs::compositing::grayscaleconversion"
 UNIFORM_COLOR = "sbs::compositing::uniform"
 TRANSFORM = "sbs::compositing::transformation"
 BLEND = "sbs::compositing::blend"
+DOT_NODE = "sbs::compositing::passthrough"
 
 def get_graph():
 	ctx = sd.getContext()
@@ -77,16 +78,28 @@ def union(graph, node1, node2):
 	
 	return blend
 
+def dot_node(graph, node):
+	dot = graph.newNode(DOT_NODE)
+	dot.setPosition(float2(node.getPosition().x + 150, node.getPosition().y))
+	
+	input = dot.getProperties(SDPropertyCategory.Input)[6]
+	output = node.getProperties(SDPropertyCategory.Output)[0]
+	
+	node.newPropertyConnection(output, dot, input)
+	
+	return dot
+	
+	
+
 def get_circ_point(i, total):
 	return float2(math.cos((2*math.pi/total)*i)/2 + 0.5, math.sin((2*math.pi/total)*i)/2 + 0.5)
 
 def main():
 	graph = get_graph()
 	total = 10
-	white = create_white_grayscale(graph, float2(0, 0))
-	line = draw_line(graph, float2(300, 0), white, get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
+	white = dot_node(graph, create_white_grayscale(graph, float2(0, 0)))
+	line = draw_line(graph, float2(450, 0), white, get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
 	for i in range(0, total):
-		print(get_circ_point(i, total), get_circ_point(i+1, total))
-		line = union(graph, line, draw_line(graph, float2(300, (i+1)*150), white, get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
+		line = union(graph, line, draw_line(graph, float2(450, (i+1)*150), white, get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
 	
 main()
