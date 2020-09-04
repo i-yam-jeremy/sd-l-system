@@ -22,14 +22,14 @@ class SDUtil:
 		uiMgr = app.getQtForPythonUIMgr()
 		self.graph = uiMgr.getCurrentGraph()
 
-	def create_white_grayscale(self, pos: float2):
+	def create_grayscale(self, value, pos: float2):
 		blank = self.graph.newNode(UNIFORM_COLOR)
 		blank.setPosition(pos)
 		gc = self.graph.newNode(GRAYSCALE_CONVERT)
 		gc.setPosition(float2(blank.getPosition().x + 150, blank.getPosition().y + 0))
 		blankOutput = blank.getProperties(SDPropertyCategory.Output)[0]
 		color = blank.getProperties(SDPropertyCategory.Input)[7]
-		blank.setPropertyValue(color, SDValueColorRGBA.sNew(ColorRGBA(1, 1, 1, 1)))
+		blank.setPropertyValue(color, SDValueColorRGBA.sNew(ColorRGBA(value, value, value, 1)))
 		gcInput = gc.getProperties(SDPropertyCategory.Input)[9]
 		blank.newPropertyConnection(blankOutput, gc, gcInput)
 		return gc
@@ -90,16 +90,61 @@ class SDUtil:
 
 		return dot
 
+class Rule:
+	def __init__(self, var, expr):
+		self.var = var
+		self.expr = expr
+
 class LSystem:
 
-	def __init__(self, initiator, *rules):
+	def __init__(self, initiator, angle, *rules):
 		self.state = initiator
-		self.rules = rules
+		self.angle = angle
+		self.current_angle = 0.0
+		self.forward_dist = 0.1
+		self.current_pos = float2(0.5, 0.5)
+		self.rules = [self.__parse_rule(rule) for rule in rules]
+
+	def __parse_rule(self, rule):
+		# NOTE: rule must be of the form (var + "=" + expr) where var is a single char string
+		return Rule(rule[0], rule[2:])
+
+	def __render_command(self, util, command, line_input, current_image, graph_pos):
+		if c == "F":
+			line = util.draw_line(graph_pos, line_input, float2(0, 0), float2(1, 1), 0.01)
+			return util.union(line, current_image)
+		elif c == "f":
+			pass
+		elif c == "+":
+			self.current_angle -= self.angle_change
+		elif c == "-":
+			self.current_angle += self.angle_change
+		elif c == "[":
+			# TODO push state
+			pass
+		elif c == "]":
+			# TODO pop state
+			pass
+		else:
+			raise ValueError("Invalid character: " + c)
+			
+
+
+	def render(self, graph_pos: float2):
+			util = SDUtil()
+			line_input = util.dot_node(util.create_grayscale(1, float2(0, 0)))
+			bg = util.create_grayscale(0, float2(0, 0))
+			current_image = bg
+			for i in range(0, len(self.state)):
+				c = self.state[i]
+				new_image = self.__render_command(util, c, line_input, current_image, float2(450, i*150)
+				if new_image is not None:
+					current_image = new_image
+			return current_image
+
 
 def main():
-	util = SDUtil()
-	total = 10
-	white = util.dot_node(util.create_white_grayscale(float2(0, 0)))
-	line = util.draw_line(float2(450, 0), white, float2(0, 0), float2(1, 1), 0.01)
+	lsystem = LSystem("F-F-F-F", 90.0, "F=F-F+F+FF-F-F+F")
+	lsystem.render(float2(0, 0))
 
 main()
