@@ -1,6 +1,6 @@
 import sd
 from sd.api.sdbasetypes import float2, float4, ColorRGBA
-from sd.api.sdproperty import SDPropertyCategory
+from sd.api.sdproperty import SDPropertyCategory, SDPropertyInheritanceMethod
 from sd.api.sdvaluecolorrgba import SDValueColorRGBA
 from sd.api.sdvalueenum import SDValueEnum
 
@@ -26,7 +26,7 @@ def create_white_grayscale(graph):
 	blank.newPropertyConnection(blankOutput, gc, gcInput)
 	return gc
 
-def transform(graph, node):
+def transform(graph, node, matrix):
 	transform = graph.newNode(TRANSFORM)
 	transform.setPosition(float2(node.getPosition().x + 150, node.getPosition().y + 0))
 	
@@ -34,17 +34,18 @@ def transform(graph, node):
 	output = node.getProperties(SDPropertyCategory.Output)[0]
 	node.newPropertyConnection(output, transform, input)
 	
-	matrix = transform.getProperties(SDPropertyCategory.Input)[6]
 	tiling = transform.getProperties(SDPropertyCategory.Input)[4]
+	transform.setPropertyInheritanceMethod(tiling, SDPropertyInheritanceMethod.Absolute)
 	transform.setPropertyValue(tiling, SDValueEnum.sFromValue("sbs::compositing::tiling", 0))
 	
-	for i in range(0, len(transform.getProperties(SDPropertyCategory.Input))):
-		print(i, transform.getProperties(SDPropertyCategory.Input)[i].getLabel())
+	matrix_prop = transform.getProperties(SDPropertyCategory.Input)[6]
+	transform.setPropertyValue(matrix_prop, matrix)
+
 	return transform
 
 def main():
 	graph = get_graph()
-	white = create_white_grayscale(g)
+	white = create_white_grayscale(graph)
 	line = transform(graph, white)
 	
 main()
