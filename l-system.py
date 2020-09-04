@@ -1,3 +1,5 @@
+import math
+
 import sd
 from sd.api.sdbasetypes import float2, float4, ColorRGBA
 from sd.api.sdproperty import SDPropertyCategory, SDPropertyInheritanceMethod
@@ -46,8 +48,11 @@ def transform(graph, node, matrix):
 	return transform
 
 def draw_line(graph, p1, p2, thickness):
-	# TODO
-	return None
+	white = create_white_grayscale(graph)
+	dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
+	print(dist)
+	line = transform(graph, white, SDValueFloat4.sNew(float4((p2.x - p1.x)/dist, (p2.y - p1.y)/thickness, -(p2.y - p1.y)/dist, (p2.x - p1.x)/thickness)))
+	return line
 
 def union(graph, node1, node2):
 	blend = graph.newNode(BLEND)
@@ -69,8 +74,6 @@ def union(graph, node1, node2):
 
 def main():
 	graph = get_graph()
-	white = create_white_grayscale(graph)
-	line = transform(graph, white, SDValueFloat4.sNew(float4(2, 0, 0, 2)))
-	union(graph, white, line)
+	line = draw_line(graph, float2(0, 0), float2(1, 0.5), 0.05)
 	
 main()
