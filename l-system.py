@@ -32,9 +32,9 @@ def create_white_grayscale(graph, pos: float2):
 	blank.newPropertyConnection(blankOutput, gc, gcInput)
 	return gc
 
-def transform(graph, node, matrix: float4, offset: float2):
+def transform(graph, graph_pos: float2, node, matrix: float4, offset: float2):
 	transform = graph.newNode(TRANSFORM)
-	transform.setPosition(float2(node.getPosition().x + 150, node.getPosition().y + 0))
+	transform.setPosition(graph_pos)
 	
 	input = transform.getProperties(SDPropertyCategory.Input)[12]
 	output = node.getProperties(SDPropertyCategory.Output)[0]
@@ -52,12 +52,11 @@ def transform(graph, node, matrix: float4, offset: float2):
 
 	return transform
 
-def draw_line(graph, graph_pos: float2, p1: float2, p2: float2, thickness):
-	white = create_white_grayscale(graph, graph_pos)
+def draw_line(graph, graph_pos: float2, input_node, p1: float2, p2: float2, thickness):
 	dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
 	matrix = float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist))
-	line_no_offset = transform(graph, white, matrix, float2(0, 0))
-	line = transform(graph, line_no_offset, float4(1, 0, 0, 1), float2(-((p1.x + p2.x)/2 - 0.5), (p1.y + p2.y)/2 - 0.5))
+	line_no_offset = transform(graph, graph_pos, input_node, matrix, float2(0, 0))
+	line = transform(graph, float2(graph_pos.x + 150, graph_pos.y), line_no_offset, float4(1, 0, 0, 1), float2(-((p1.x + p2.x)/2 - 0.5), (p1.y + p2.y)/2 - 0.5))
 	return line
 
 def union(graph, node1, node2):
@@ -84,9 +83,10 @@ def get_circ_point(i, total):
 def main():
 	graph = get_graph()
 	total = 10
-	line = draw_line(graph, float2(0, 0), get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
+	white = create_white_grayscale(graph, float2(0, 0))
+	line = draw_line(graph, float2(300, 0), white, get_circ_point(total-1, total), get_circ_point(0, total), 0.01)
 	for i in range(0, total):
 		print(get_circ_point(i, total), get_circ_point(i+1, total))
-		line = union(graph, line, draw_line(graph, float2(0, (i+1)*150), get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
+		line = union(graph, line, draw_line(graph, float2(300, (i+1)*150), white, get_circ_point(i, total), get_circ_point(i+1, total), 0.01))
 	
 main()
