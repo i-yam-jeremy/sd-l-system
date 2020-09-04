@@ -3,6 +3,7 @@ from sd.api.sdbasetypes import float2, float4, ColorRGBA
 from sd.api.sdproperty import SDPropertyCategory, SDPropertyInheritanceMethod
 from sd.api.sdvaluecolorrgba import SDValueColorRGBA
 from sd.api.sdvalueenum import SDValueEnum
+from sd.api.sdvaluefloat4 import SDValueFloat4
 
 GRAYSCALE_CONVERT = "sbs::compositing::grayscaleconversion"
 UNIFORM_COLOR = "sbs::compositing::uniform"
@@ -39,6 +40,7 @@ def transform(graph, node, matrix):
 	transform.setPropertyValue(tiling, SDValueEnum.sFromValue("sbs::compositing::tiling", 0))
 	
 	matrix_prop = transform.getProperties(SDPropertyCategory.Input)[6]
+	print(matrix_prop.getType())
 	transform.setPropertyValue(matrix_prop, matrix)
 
 	return transform
@@ -46,6 +48,6 @@ def transform(graph, node, matrix):
 def main():
 	graph = get_graph()
 	white = create_white_grayscale(graph)
-	line = transform(graph, white)
+	line = transform(graph, white, SDValueFloat4.sNew(float4(2, 0, 0, 2)))
 	
 main()
