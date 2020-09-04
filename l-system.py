@@ -100,19 +100,20 @@ class Rule:
 		self.expr = expr
 
 class TurtleState:
-	def __init__(self, angle, pos, dist):
+	def __init__(self, angle, pos, dist, thickness):
 		self.angle = angle
 		self.pos = pos
 		self.dist = dist
+		self.thickness = thickness
 	def copy(self):
-		return TurtleState(self.angle, self.pos, self.dist)
+		return TurtleState(self.angle, self.pos, self.dist, self.thickness)
 
 class LSystem:
 
-	def __init__(self, initiator, angle_change, *rules):
+	def __init__(self, initiator, angle_change, forward_dist, thickness, rules):
 		self.state = initiator
 		self.angle_change = angle_change
-		self.turtle_state = TurtleState(0.0, float2(0.5, 0.5), 0.05)
+		self.turtle_state = TurtleState(0.0, float2(0.5, 0.5), forward_dist, thickness)
 		self.turtle_states = []
 		self.rules = [self.__parse_rule(rule) for rule in rules]
 
@@ -141,7 +142,7 @@ class LSystem:
 	def __render_command(self, util, c, line_input, current_image, graph_pos):
 		if c == "F":
 			new_pos = float2(self.turtle_state.pos.x + self.turtle_state.dist*math.cos(math.pi/180 * self.turtle_state.angle), self.turtle_state.pos.y + self.turtle_state.dist*math.sin(math.pi/180 * self.turtle_state.angle))
-			line = util.draw_line(graph_pos, line_input, self.turtle_state.pos, new_pos, 0.01)
+			line = util.draw_line(graph_pos, line_input, self.turtle_state.pos, new_pos, self.turtle_state.thickness)
 			self.turtle_state.pos = new_pos
 			return util.union(line, current_image)
 		elif c == "f":
@@ -163,8 +164,7 @@ class LSystem:
 			
 
 
-	def render(self, graph_pos: float2):
-			util = SDUtil()
+	def render(self, util, graph_pos: float2):
 			line_input = util.dot_node(util.create_grayscale(1, float2(0, 0)))
 			bg = util.create_grayscale(0, float2(0, 0))
 			current_image = bg
@@ -175,11 +175,23 @@ class LSystem:
 					current_image = new_image
 			return current_image
 
+def convert_node_to_lsystem(node):
+	props = node.getProperties(SDPropertyCategory.Input)
+	initiator = node.getPropertyValue(props[6]).get()
+	rules = node.getPropertyValue(props[7]).get()
+	angle_change = node.getPropertyValue(props[8]).get()
+	dist = node.getPropertyValue(props[9]).get()
+	thickness = node.getPropertyValue(props[10]).get()
+	generations = node.getPropertyValue(props[11]).get()
+	lsystem = LSystem(initiator, angle_change, dist, thickness, rules.split("\n"))
+	lsystem.iterate_generations(generations)
+	return lsystem
 
 def main():
-	print(SDUtil().get_selected_lsystem_nodes())
-	#lsystem = LSystem("F", 25.0, "F=F[-F][+F]")
-	#lsystem.iterate_generations(4)
-	#lsystem.render(float2(0, 0))
+	util = SDUtil()
+	nodes = util.get_selected_lsystem_nodes()
+	for node in nodes:
+		lsystem = convert_node_to_lsystem(node)
+		lsystem.render(util, node.getPosition())
 
 main()
