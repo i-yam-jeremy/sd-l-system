@@ -10,6 +10,8 @@ from sd.api.sdvaluefloat4 import SDValueFloat4
 from sd.api.sdvaluestring import SDValueString
 from sd.api.sdvalueint import SDValueInt
 
+MENU_NAME = "doc.lsystem.lsystem_menu"
+
 CONST_FLOAT1 = "sbs::function::const_float1"
 CONST_FLOAT2 = "sbs::function::const_float2"
 CONST_FLOAT4 = "sbs::function::const_float4"
@@ -18,9 +20,12 @@ GET_FLOAT2 = "sbs::function::get_float2"
 SWIZZLE1 = "sbs::function::swizzle1"
 ADD = "sbs::function::add"
 MUL = "sbs::function::mul"
+DIV = "sbs::function::div"
+ABS = "sbs::function::abs"
 LESSTHAN = "sbs::function::lr"
 AND = "sbs::function::and"
 IFELSE = "sbs::function::ifelse"
+DOT_PROD = "sbs::function::dot"
 PIXEL_PROCESSOR = "sbs::compositing::pixelprocessor"
 
 class SDUtil:
@@ -58,37 +63,18 @@ class SDUtil:
 		b.newPropertyConnection(output2, v, input2)
 
 		return v
-
-	def apply_transform_matrix(self, func_graph, graph_pos: float2, input_node, matrix: float4):
-		matrix_node = func_graph.newNode(CONST_FLOAT4)
-		matrix_value_prop = matrix_node.getPropertyFromId('__constant__', SDPropertyCategory.Input)
-		matrix_node.setPropertyValue(matrix_value_prop, SDValueFloat4.sNew(matrix))
-
-		Mx = self.swizzle1(func_graph, matrix_node, 0)
-		My = self.swizzle1(func_graph, matrix_node, 1)
-		Mz = self.swizzle1(func_graph, matrix_node, 2)
-		Mw = self.swizzle1(func_graph, matrix_node, 3)
-
-		Px = self.swizzle1(func_graph, input_node, 0)
-		Py = self.swizzle1(func_graph, input_node, 1)
-
-		# P' = (M.x*P.x + M.y*P.y, M.z*P.x + M.w*P.y)
-		f = func_graph
-		return self.vector2(f,
-			self.add(f, self.mul(f, Mx, Px), self.mul(f, My, Py)),
-			self.add(f, self.mul(f, Mz, Px), self.mul(f, Mw, Py)))
 			
 	def const_float1(self, func_graph, value: float):
 		node = func_graph.newNode(CONST_FLOAT1)
 		value_prop = node.getPropertyFromId('__constant__', SDPropertyCategory.Input)
 		node.setPropertyValue(value_prop, SDValueFloat.sNew(value))
 		return node
-
-	def add_float2(self, func_graph, graph_pos: float2, input_node, offset: float2):
-		offset_node = func_graph.newNode(CONST_FLOAT2)
-		offset_value_prop = offset_node.getPropertyFromId('__constant__', SDPropertyCategory.Input)
-		offset_node.setPropertyValue(offset_value_prop, SDValueFloat2.sNew(offset))
-		return self.add(func_graph, input_node, offset_node)
+	
+	def const_float2(self, func_graph, value: float2):
+		node = func_graph.newNode(CONST_FLOAT2)
+		value_prop = node.getPropertyFromId('__constant__', SDPropertyCategory.Input)
+		node.setPropertyValue(value_prop, SDValueFloat2.sNew(value))
+		return node
 
 	def get_current_pos(self, func_graph, graph_pos: float2):
 		node = func_graph.newNode(GET_FLOAT2)
@@ -96,26 +82,18 @@ class SDUtil:
 		node.setPropertyValue(prop, SDValueString.sNew("$pos"))
 		return node
 
-	def check_in_0_to_1_box(self, func_graph, input_node):
-		x = self.swizzle1(func_graph, input_node, 0)
-		y = self.swizzle1(func_graph, input_node, 1)
-		f = func_graph
-		return self.ifelse(f,
-			self.and_nodes(f,
-				self.and_nodes(f, self.lessthan(f, self.const_float1(f, 0), x),
-						 self.lessthan(f, x, self.const_float1(f, 1))),
-				self.and_nodes(f, self.lessthan(f, self.const_float1(f, 0), y),
-						 self.lessthan(f, y, self.const_float1(f, 1)))),
-			self.const_float1(f, 1),
-			self.const_float1(f, 0))
-
 	def draw_line(self, func_graph, graph_pos: float2, p1: float2, p2: float2, thickness):
-		dist = math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2)
-		matrix = float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist))
-		current_pos = self.get_current_pos(func_graph, graph_pos)
-		line_no_offset = self.apply_transform_matrix(func_graph, graph_pos, current_pos, matrix)
-		line_point = self.add_float2(func_graph, float2(graph_pos.x + 150, graph_pos.y), line_no_offset, float2(-((p1.x + p2.x)/2), (p1.y + p2.y)/2))
-		return self.check_in_0_to_1_box(func_graph, line_point)
+		f = func_graph
+		segment_dist = self.const_float1(f, math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2))
+		constant = self.const_float1(f, p2.x*p1.y - p2.y*p1.x)
+		pvec = self.const_float2(f, float2(p2.y-p1.y, -(p2.x-p1.x)))
+		current_pos = self.get_current_pos(f, graph_pos)
+		
+		dist_to_line = self.div(f, self.abs(f, self.add(f, self.dot_prod(f, pvec, current_pos), constant)), segment_dist)
+		
+		# TODO check if within segment bounds (NOT INFINITE LINE)
+		
+		return self.ifelse(f, self.lessthan(f, dist_to_line, self.const_float1(f, thickness)), self.const_float1(f, 1), self.const_float1(f, 0))
 
 	def ifelse(self, func_graph, condition_node, node1, node2):
 		ifelse = func_graph.newNode(IFELSE)
@@ -165,6 +143,21 @@ class SDUtil:
 		lt.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
 
 		return lt
+	
+	def dot_prod(self, func_graph, node1, node2):
+		dot_prod = func_graph.newNode(DOT_PROD)
+
+		input1 = dot_prod.getPropertyFromId('a', SDPropertyCategory.Input)
+		output1 = node1.getProperties(SDPropertyCategory.Output)[0]
+		node1.newPropertyConnection(output1, dot_prod, input1)
+
+		input2 = dot_prod.getPropertyFromId('b', SDPropertyCategory.Input)
+		output2 = node2.getProperties(SDPropertyCategory.Output)[0]
+		node2.newPropertyConnection(output2, dot_prod, input2)
+
+		dot_prod.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
+
+		return dot_prod
 
 	def mul(self, func_graph, node1, node2):
 		mul = func_graph.newNode(MUL)
@@ -180,6 +173,30 @@ class SDUtil:
 		mul.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
 
 		return mul
+	
+	def abs(self, func_graph, node):
+		abs = func_graph.newNode(ABS)
+
+		input = abs.getPropertyFromId('a', SDPropertyCategory.Input)
+		output = node.getProperties(SDPropertyCategory.Output)[0]
+		node.newPropertyConnection(output, abs, input)
+
+		return abs
+	
+	def div(self, func_graph, node1, node2):
+		div = func_graph.newNode(DIV)
+
+		input1 = div.getPropertyFromId('a', SDPropertyCategory.Input)
+		output1 = node1.getProperties(SDPropertyCategory.Output)[0]
+		node1.newPropertyConnection(output1, div, input1)
+
+		input2 = div.getPropertyFromId('b', SDPropertyCategory.Input)
+		output2 = node2.getProperties(SDPropertyCategory.Output)[0]
+		node2.newPropertyConnection(output2, div, input2)
+
+		div.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
+
+		return div
 
 	def add(self, func_graph, node1, node2):
 		add = func_graph.newNode(ADD)
@@ -313,7 +330,7 @@ def initializeSDPlugin():
 	app = sd.getContext().getSDApplication()
 	uiMgr = app.getQtForPythonUIMgr()
 
-	menu = uiMgr.newMenu(menuTitle="Lsystem", objectName="doc.lsystem.lsystem_menu")
+	menu = uiMgr.newMenu(menuTitle="Lsystem", objectName=MENU_NAME)
 	act = QtWidgets.QAction("Convert Selected", menu)
 	act.triggered.connect(convert_selected_lsystem_nodes)
 
@@ -322,6 +339,6 @@ def initializeSDPlugin():
 # If this function is present in your plugin,
 # it will be called by Designer when unloading the plugin.
 def uninitializeSDPlugin():
-	pass
+	uiMgr.deleteMenu(MENU_NAME)
 
 initializeSDPlugin()
