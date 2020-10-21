@@ -19,6 +19,7 @@ VECTOR2 = "sbs::function::vector2"
 GET_FLOAT2 = "sbs::function::get_float2"
 SWIZZLE1 = "sbs::function::swizzle1"
 ADD = "sbs::function::add"
+SUBTRACT = "sbs::function::sub"
 MUL = "sbs::function::mul"
 DIV = "sbs::function::div"
 ABS = "sbs::function::abs"
@@ -91,12 +92,22 @@ class SDUtil:
 		
 		dist_to_line = self.div(f, self.abs(f, self.add(f, self.dot_prod(f, pvec, current_pos), constant)), segment_dist)
 		
-		current_x = self.swizzle1(f, current_pos, 0)
+		p1_node = self.const_float2(f, p1)
+		p2_node = self.const_float2(f, p2)
+		p1_to_cur = self.subtract(f, current_pos, p1_node)
+		p2_to_cur = self.subtract(f, current_pos, p2_node)
+		p1_to_p2 = self.subtract(f, p2_node, p1_node)
+		p2_to_p1 = self.subtract(f, p1_node, p2_node)
+		dot1 = self.dot_prod(f, p1_to_cur, p1_to_p2)
+		dot2 = self.dot_prod(f, p2_to_cur, p2_to_p1)
+		zero = self.const_float1(f, 0)
+		on_segment = self.and_nodes(f, self.lessthan(f, zero, dot1), self.lessthan(f, zero, dot2))
+		
 		
 		return self.ifelse(f, 
 		self.and_nodes(f,
 			self.lessthan(f, dist_to_line, self.const_float1(f, thickness)),
-			self.and_nodes(f, self.lessthan(f, self.const_float1(f, min(p1.x, p2.x)), current_x), self.lessthan(f, current_x, self.const_float1(f, max(p1.x, p2.x))))),
+			on_segment),
 		self.const_float1(f, 1), 
 		self.const_float1(f, 0))
 
@@ -202,6 +213,21 @@ class SDUtil:
 		div.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
 
 		return div
+	
+	def subtract(self, func_graph, node1, node2):
+		sub = func_graph.newNode(SUBTRACT)
+
+		input1 = sub.getPropertyFromId('a', SDPropertyCategory.Input)
+		output1 = node1.getProperties(SDPropertyCategory.Output)[0]
+		node1.newPropertyConnection(output1, sub, input1)
+
+		input2 = sub.getPropertyFromId('b', SDPropertyCategory.Input)
+		output2 = node2.getProperties(SDPropertyCategory.Output)[0]
+		node2.newPropertyConnection(output2, sub, input2)
+
+		sub.setPosition(float2(max(node1.getPosition().x, node2.getPosition().x) + 150, (node1.getPosition().y + node2.getPosition().y) / 2))
+
+		return sub
 
 	def add(self, func_graph, node1, node2):
 		add = func_graph.newNode(ADD)
