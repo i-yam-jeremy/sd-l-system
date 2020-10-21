@@ -286,7 +286,8 @@ class LSystem:
 				new_image = self.__render_command(util, func_graph, c, current_image, float2(450, i*100))
 				if new_image is not None:
 					current_image = new_image
-			return current_image
+			func_graph.setOutputNode(current_image, True)
+			return pixel_processor
 
 def convert_node_to_lsystem(node):
 	props = node.getProperties(SDPropertyCategory.Input)
