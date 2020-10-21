@@ -91,9 +91,14 @@ class SDUtil:
 		
 		dist_to_line = self.div(f, self.abs(f, self.add(f, self.dot_prod(f, pvec, current_pos), constant)), segment_dist)
 		
-		# TODO check if within segment bounds (NOT INFINITE LINE)
+		current_x = self.swizzle1(f, current_pos, 0)
 		
-		return self.ifelse(f, self.lessthan(f, dist_to_line, self.const_float1(f, thickness)), self.const_float1(f, 1), self.const_float1(f, 0))
+		return self.ifelse(f, 
+		self.and_nodes(f,
+			self.lessthan(f, dist_to_line, self.const_float1(f, thickness)),
+			self.and_nodes(f, self.lessthan(f, self.const_float1(f, min(p1.x, p2.x)), current_x), self.lessthan(f, current_x, self.const_float1(f, max(p1.x, p2.x))))),
+		self.const_float1(f, 1), 
+		self.const_float1(f, 0))
 
 	def ifelse(self, func_graph, condition_node, node1, node2):
 		ifelse = func_graph.newNode(IFELSE)
