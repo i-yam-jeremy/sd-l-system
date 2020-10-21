@@ -51,11 +51,11 @@ class SDUtil:
 		
 		input1 = v.getPropertyFromId('componentsin', SDPropertyCategory.Input)
 		output1 = a.getProperties(SDPropertyCategory.Output)[0]
-		v.newPropertyConnection(output1, v, input1)
+		a.newPropertyConnection(output1, v, input1)
 		
 		input2 = v.getPropertyFromId('componentslast', SDPropertyCategory.Input)
 		output2 = b.getProperties(SDPropertyCategory.Output)[0]
-		v.newPropertyConnection(output2, v, input2)
+		b.newPropertyConnection(output2, v, input2)
 
 		return v
 
@@ -114,7 +114,7 @@ class SDUtil:
 		matrix = float4((p2.x - p1.x)/(dist*dist), (p2.y - p1.y)/(thickness*dist), -(p2.y - p1.y)/(dist*dist), (p2.x - p1.x)/(thickness*dist))
 		current_pos = self.get_current_pos(func_graph, graph_pos)
 		line_no_offset = self.apply_transform_matrix(func_graph, graph_pos, current_pos, matrix)
-		line_point = self.add_float2(func_graph, float2(graph_pos.x + 150, graph_pos.y), line_no_offset, float2(-((p1.x + p2.x)/2 - 0.5), (p1.y + p2.y)/2 - 0.5))
+		line_point = self.add_float2(func_graph, float2(graph_pos.x + 150, graph_pos.y), line_no_offset, float2(-((p1.x + p2.x)/2), (p1.y + p2.y)/2))
 		return self.check_in_0_to_1_box(func_graph, line_point)
 
 	def ifelse(self, func_graph, condition_node, node1, node2):
