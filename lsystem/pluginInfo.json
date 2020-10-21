@@ -1,0 +1,9 @@
+{
+    "metadata_format_version": "1",
+    "name": "lsystem",
+    "version": "1.0",
+    "author": "Jeremy Berchtold",
+    "email": "",
+    "min_designer_version": "2019.2",
+    "platform": "any"
+}

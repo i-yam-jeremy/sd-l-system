@@ -1,6 +1,7 @@
 import math
 
 import sd
+from PySide2 import QtWidgets
 from sd.api.sdbasetypes import float2, float4, ColorRGBA
 from sd.api.sdproperty import SDPropertyCategory, SDPropertyInheritanceMethod
 from sd.api.sdvaluecolorrgba import SDValueColorRGBA
@@ -21,7 +22,7 @@ class SDUtil:
 		app = ctx.getSDApplication()
 		self.ui_mgr = app.getQtForPythonUIMgr()
 		self.graph = self.ui_mgr.getCurrentGraph()
-		
+
 	def get_selected_lsystem_nodes(self):
 		selection = self.ui_mgr.getCurrentGraphSelection()
 		return [node for node in selection if node.getDefinition().getLabel() == "L-System"]
@@ -120,11 +121,11 @@ class LSystem:
 	def __parse_rule(self, rule):
 		# NOTE: rule must be of the form (var + "=" + expr) where var is a single char string
 		return Rule(rule[0], rule[2:])
-	
+
 	def iterate_generations(self, gen_count):
 		for i in range(0, gen_count):
 			self.state = self.__iterate_generation(self.state)
-			
+
 	def __iterate_generation(self, state):
 		new_state = ""
 		for c in state:
@@ -137,7 +138,7 @@ class LSystem:
 			if not matched_rule:
 				new_state += c
 		return new_state
-			
+
 
 	def __render_command(self, util, c, line_input, current_image, graph_pos):
 		if c == "F":
@@ -161,7 +162,7 @@ class LSystem:
 				raise ValueError("No states left to POP")
 		else:
 			raise ValueError("Invalid character: " + c)
-			
+
 
 
 	def render(self, util, graph_pos: float2):
@@ -187,11 +188,25 @@ def convert_node_to_lsystem(node):
 	lsystem.iterate_generations(generations)
 	return lsystem
 
-def main():
+def convert_selected_lsystem_nodes():
 	util = SDUtil()
 	nodes = util.get_selected_lsystem_nodes()
 	for node in nodes:
 		lsystem = convert_node_to_lsystem(node)
 		lsystem.render(util, node.getPosition())
 
-main()
+# Plugin entry point. Called by Designer when loading a plugin.
+def initializeSDPlugin():
+	app = sd.getContext().getSDApplication()
+	uiMgr = app.getQtForPythonUIMgr()
+
+	menu = uiMgr.newMenu(menuTitle="Lsystem", objectName="doc.lsystem.lsystem_menu")
+	act = QtWidgets.QAction("Convert Selected", menu)
+	act.triggered.connect(convert_selected_lsystem_nodes)
+
+	menu.addAction(act)
+
+# If this function is present in your plugin,
+# it will be called by Designer when unloading the plugin.
+def uninitializeSDPlugin():
+	pass
