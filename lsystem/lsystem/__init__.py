@@ -13,6 +13,7 @@ from sd.api.sdvalueint import SDValueInt
 CONST_FLOAT1 = "sbs::function::const_float1"
 CONST_FLOAT2 = "sbs::function::const_float2"
 CONST_FLOAT4 = "sbs::function::const_float4"
+VECTOR2 = "sbs::function::vector2"
 GET_FLOAT2 = "sbs::function::get_float2"
 SWIZZLE1 = "sbs::function::swizzle1"
 ADD = "sbs::function::add"
@@ -44,6 +45,19 @@ class SDUtil:
 		swizzle.setPropertyValue(component_prop, SDValueInt.sNew(component_index))
 
 		return swizzle
+	
+	def vector2(self, func_graph, a, b):
+		v = func_graph.newNode(VECTOR2)
+		
+		input1 = v.getPropertyFromId('componentsin', SDPropertyCategory.Input)
+		output1 = a.getProperties(SDPropertyCategory.Output)[0]
+		v.newPropertyConnection(output1, v, input1)
+		
+		input2 = v.getPropertyFromId('componentslast', SDPropertyCategory.Input)
+		output2 = b.getProperties(SDPropertyCategory.Output)[0]
+		v.newPropertyConnection(output2, v, input2)
+
+		return v
 
 	def apply_transform_matrix(self, func_graph, graph_pos: float2, input_node, matrix: float4):
 		matrix_node = func_graph.newNode(CONST_FLOAT4)
@@ -58,9 +72,9 @@ class SDUtil:
 		Px = self.swizzle1(func_graph, input_node, 0)
 		Py = self.swizzle1(func_graph, input_node, 1)
 
-		# P' = M.x*P.x + M.y*P.y + M.z*P.x + M.w*P.y
+		# P' = (M.x*P.x + M.y*P.y, M.z*P.x + M.w*P.y)
 		f = func_graph
-		return self.add(f,
+		return self.vector2(f,
 			self.add(f, self.mul(f, Mx, Px), self.mul(f, My, Py)),
 			self.add(f, self.mul(f, Mz, Px), self.mul(f, Mw, Py)))
 			
@@ -104,9 +118,9 @@ class SDUtil:
 		return self.check_in_0_to_1_box(func_graph, line_point)
 
 	def ifelse(self, func_graph, condition_node, node1, node2):
-		ifelse = func_graph.newNode(LESSTHAN)
+		ifelse = func_graph.newNode(IFELSE)
 
-		input = ifelse.getPropertyFromId('condition_node', SDPropertyCategory.Input)
+		input = ifelse.getPropertyFromId('condition', SDPropertyCategory.Input)
 		output = condition_node.getProperties(SDPropertyCategory.Output)[0]
 		condition_node.newPropertyConnection(output, ifelse, input)
 
