@@ -370,6 +370,6 @@ def initializeSDPlugin():
 # If this function is present in your plugin,
 # it will be called by Designer when unloading the plugin.
 def uninitializeSDPlugin():
+	app = sd.getContext().getSDApplication()
+	uiMgr = app.getQtForPythonUIMgr()
 	uiMgr.deleteMenu(MENU_NAME)
-
-initializeSDPlugin()
